@@ -8,6 +8,9 @@ const fs = require('fs')
 const AWS = require('aws-sdk')   
 const path = require('path')
 const uuid = require('uuid')
+const {logger} = require("../config/logger.js")
+const SDC = require("statsd-client");
+const sdc = new SDC({ host: "localhost", port: 8125 });
 
 require('dotenv').config()
 
@@ -19,11 +22,12 @@ const s3 = new AWS.S3({
   });
 
 const postImage = async (request, response) => {
-
+    sdc.increment("Endpoint-POST_post-image");
     const [username, password] = basicAuth(request);
     console.log(basicAuth(request))
 
     if (!username || !password) {
+        logger.info('Basic authorization has failed')
         return response.status(401)
         .json("Basic authorization has failed due to invalid username/password or User must select Basic Auth");
     }
@@ -36,6 +40,7 @@ const postImage = async (request, response) => {
     var userData = ""
 
     if (!request.file) {
+        logger.info('Invalid input')
         console.log(request.file)
         return response.status(400).json("No input data is provided");
     }
@@ -46,6 +51,7 @@ const postImage = async (request, response) => {
 
     if (fileExtension == '.jpeg' || fileExtension == '.png' || fileExtension == '.jpg') {
         console.log("File is an image")
+        logger.info('File is an image')
     }
     else return response.status(400).json('Invalid file extension. Only images are allowed.')
 
@@ -54,6 +60,7 @@ const postImage = async (request, response) => {
     }})
     .then(userResult => {
         if(userResult){
+            logger.info('Comparing the passwords')
             const hashPassword = userResult.get('password')
             comparePassword(hashPassword, password)
             .then(async compareValue => {
@@ -62,29 +69,31 @@ const postImage = async (request, response) => {
                     await Product.findByPk(productId)
                     .then(prodResult => {
                         if(!prodResult) {
+                            logger.info('Product is not available')
                             return response.status(400).json("Product is not available")
                         }
                         else if(prodResult.dataValues.owner_user_id != userResult.dataValues.id)
                         {
+                            logger.info('Not authenticated')
                             return response.status(404).json("Not authenticated")
                         }
                         else
                         {
                             const file = request.file
-                    
-                        console.log(file)
-                        const fileStream = fs.createReadStream(file.path)
-                        
-                        const randomValue = uuid.v4()
-                        const params = {
-                            Bucket: BUCKET_NAME,
-                            Key: `images/${userResult.dataValues.id}/product/${prodResult.dataValues.id}/` + file.originalname + randomValue,
-                            Body: fileStream,
-                        }
+                            console.log(file)
+                            const fileStream = fs.createReadStream(file.path)
+                            
+                            const randomValue = uuid.v4()
+                            const params = {
+                                Bucket: BUCKET_NAME,
+                                Key: `images/${userResult.dataValues.id}/product/${prodResult.dataValues.id}/` + file.originalname + randomValue,
+                                Body: fileStream,
+                            }
 
                         s3.upload(params, (err, data) => {
                             if (err) {
-                            console.log('Error uploading image:', err);
+                                console.log('Error uploading image:', err);
+                                logger.info('Error while creating image')
                                 return response.status(400).json("Error while creating image")
                             }
                             else {
@@ -95,11 +104,14 @@ const postImage = async (request, response) => {
                                     s3_bucket_path : data.Location
                                 }
                                 console.log('Image uploaded successfully. S3 URL:', data.Location);
+                                logger.info('Image uploaded successfully. S3 URL:', data.Location)
                                 Image.create(newImage)
                                 .then(data => {
+                                    logger.info('Image created successfully. S3 URL:', data.Location)
                                     return response.status(201).json(data)
                                 })
                                 .catch(error => {
+                                    logger.info('Error occured while creating the image')
                                     console.log(error)
                                     return response.status(400).json("Error occured while creating the image")
                                 })

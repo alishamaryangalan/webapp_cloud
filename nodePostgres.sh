@@ -24,18 +24,28 @@ sudo yum install -y nodejs
 # sudo systemctl restart postgresql
 # sudo systemctl status postgresql
 
-sudo yum clean all
-sudo rm -rf /var/cache/yum
+# sudo yum clean all
+# sudo rm -rf /var/cache/yum
+
+#install cloud watch agent
+sudo yum install amazon-cloudwatch-agent -y
 
 sudo unzip webapp.zip -d webapp
-cd ~/webapp && sudo mkdir uploads
-cd ~/webapp && sudo chmod 777 uploads
-cd ~/webapp && sudo npm install i
+cd ~/webapp || exit
+sudo mkdir uploads
+sudo chmod 777 uploads
+sudo npm install i
 
-pwd
-sudo mv /tmp/webapp.service /etc/systemd/system/
+sudo chmod 777 cloudwatch
 
-sudo systemctl daemon-reload
-sudo systemctl start webapp
-sudo systemctl enable webapp
-sudo systemctl status webapp
+#copy the json file from webapp to /opt/
+sudo cp ~/webapp/cloudwatch/cloudwatch-config.json /opt/cloudwatch-config.json
+
+sudo mv /tmp/webapp.service /etc/systemd/system/webapp.service
+
+sudo npm install statsd-client
+
+# sudo systemctl daemon-reload
+sudo systemctl enable webapp.service
+sudo systemctl start webapp.service
+sudo systemctl status webapp.service

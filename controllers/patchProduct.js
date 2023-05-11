@@ -3,12 +3,17 @@ const { comparePassword } = require("../utils/password")
 const db = require("../models")
 const Product = db.products
 const User = db.users
+const {logger} = require("../config/logger.js")
+const SDC = require("statsd-client");
+const sdc = new SDC({ host: "localhost", port: 8125 });
 
 const patchProduct = async(request, response) => {
+    sdc.increment("Endpoint-PATCH_patch-product");
     const [username, password] = basicAuth(request);
     console.log(basicAuth(request))
 
     if (!username || !password) {
+        logger.info('Basic authorization has failed')
         return response.status(401)
         .json("Basic authorization has failed due to invalid username/password or User must select Basic Auth");
     }
@@ -16,15 +21,16 @@ const patchProduct = async(request, response) => {
     if(isNaN(productId)) return response.status(400).json("Enter a valid product id") 
 
     var userData = ""
-    var prodData = ""
     var prodInfo = ""
 
     const requestKey = request.body ? Object.keys(request.body) : null;
         if (!requestKey || !requestKey.length) {
+            logger.info('Invalid input')
             return response.status(400).json("Input is not valid");
     }
 
     if(requestKey.includes('date_added') || requestKey.includes('date_last_updated') || requestKey.includes('owner_user_id')){
+        logger.info('Invalid input')
         return response.status(400).json("Enter only the required details.");
     }
 
@@ -37,6 +43,7 @@ const patchProduct = async(request, response) => {
             comparePassword(hashPassword, password)
             .then(async compareValue => {
                 if(compareValue){
+                    logger.info('comparing values wrt password')
                     userData = userResult.get("id")
                     await Product.findByPk(productId)
             .then(prodResult => {
@@ -46,16 +53,20 @@ const patchProduct = async(request, response) => {
                 prodInfo = prodResult
 
                 if(prodInfo == undefined || prodInfo == null) {
+                    logger.info('Product does not exist!')
                     return response.status(404).json("Product does not exist!")}
                 else if(userData != prodInfo.owner_user_id) {
+                    logger.info('User is not authorized to access this product')
                     return response.status(403).json("User is not authorized to access this product")}
                 else if( prodResult && ((request.body.name==undefined || request.body.name==null) || 
                 (request.body.manufacturer===null) || (request.body.quantity===null) 
                 || (request.body.sku===null) ||(request.body.description===null))){
-                        return response.status(400).json("Invalid data")
+                    logger.info('Invalid data')
+                    return response.status(400).json("Invalid data")
                 }
                 else if (requestKey.includes('quantity') && (typeof request.body.quantity != 'number' 
                 || request.body.quantity<0 || request.body.quantity>100 || request.body.quantity===null)){
+                    logger.info('Invalid quantity for the product')
                     return response.status(400).json("Enter valid quantity for the product");
                 }
                 else if(requestKey.includes('sku')){
@@ -70,8 +81,12 @@ const patchProduct = async(request, response) => {
                                     date_last_updated: new Date().toISOString()
                                 },
                                 { where: { id: productId } })
-                                .then(result => { return response.status(204).send("Data is updated.")})
-                                .catch(err => { return response.sendStatus(403)})
+                                .then(result => { 
+                                    logger.info('Data is updated')
+                                    return response.status(204).send("Data is updated.")})
+                                .catch(err => { 
+                                    logger.info('Error in updating the data')
+                                    return response.sendStatus(403)})
                             }
                 }) ;
             }
@@ -82,8 +97,12 @@ const patchProduct = async(request, response) => {
                         date_last_updated: new Date().toISOString()
                     },
                     { where: { id: productId } })
-                    .then(result => { return response.status(204).send("Data is updated.")})
-                    .catch(err => { return response.sendStatus(400)})
+                    .then(result => { 
+                        logger.info('Data is updated')
+                        return response.status(204).send("Data is updated.")})
+                    .catch(err => { 
+                        logger.info('Error in updating the data')
+                        return response.sendStatus(400)})
         }})
         } else return response.status(401).json("Not authenticated")
     })

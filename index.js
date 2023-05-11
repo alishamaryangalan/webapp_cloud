@@ -16,6 +16,9 @@ const {
     getAllImages,
     deleteImage
 } = require("./controllers")
+const {logger} = require("./config/logger.js")
+const SDC = require("statsd-client");
+const sdc = new SDC({ host: "localhost", port: 8125 });
 
 require('dotenv').config()
 
@@ -50,17 +53,22 @@ db.sequelize.sync(
     )
 .then(() => {
     app.listen(PORT, () =>  console.log(`App running on port ${PORT}.`))
+    logger.info('Checking to see if the app is properly running on the port')
    })
 
 //To check if the app is working
 app.get('/', (request, response) => {
     response.json("App seems to be working!")
-  })
+    logger.info('App seems to be working!')
+    // sdc.increment("Endpoint-health") 
+})
 
 //To check the healthz endpoint
 app.get('/healthz', (request, response) => {
     try{
         response.sendStatus(200)
+        logger.info('Healthz seems to be working fine!')
+        sdc.increment("Endpoint-health") 
     }
     catch(error){
         response.sendStatus(500)
@@ -101,10 +109,9 @@ app.get('/v1/product/:productId/image/:imageId', getImage)
 app.get('/v1/product/:productId/image', getAllImages)
 
 //To delete the image
-app.delete('/v1/product/:productId/image/:imageId', deleteImage)
 
 //Page not found
-app.use((request, response, next) => {
+app.use((request, response, next) => {app.delete('/v1/product/:productId/image/:imageId', deleteImage)
     return response.status(404).send('Sorry, cannot find this page!');
   });
 
@@ -117,6 +124,6 @@ app.use((err, req, res, next) => {
     } 
     else if (err) {
       return res.status(500).json(err.message);
-    }
+    } 
     next();
   })
