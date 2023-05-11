@@ -1,21 +1,15 @@
 module.exports = (sequelize, Sequelize) => {
-    const User = sequelize.define("users", {
-        first_name: {
+    const Image = sequelize.define("image", {
+        product_id: {
             type: Sequelize.STRING
         },
-        last_name: {
+        file_name: {
             type: Sequelize.STRING
         },
-        username: {
+        date_created: {
             type: Sequelize.STRING
         },
-        password: {
-            type: Sequelize.STRING
-        },
-        account_created: {
-            type: Sequelize.STRING
-        },
-        account_updated: {
+        s3_bucket_path: {
             type: Sequelize.STRING
         }
     },
@@ -25,5 +19,5 @@ module.exports = (sequelize, Sequelize) => {
         underscored: true
     }
     );
-    return User
+    return Image
 }

@@ -4,14 +4,14 @@ const db = require("../models")
 const User = db.users
 
 const createUser = async (request, response) => {
-    const fields = ["firstname", "lastname", "username", "password", "account_created", "account_updated"]
+    const fields = ["first_name", "last_name", "username", "password", "account_created", "account_updated"]
     //return an array of the property names of the request.body object 
     // The request.body object typically contains data that has been sent from a client-side application, 
     //such as a web browser, to a server-side application, such as a server written in Node.js. 
     //The Object.keys() method is used to extract the property names of the object and return them as an array.
     const requestKey = request.body ? Object.keys(request.body) : null;
     if (!requestKey || !requestKey.length) {
-        console.log(request.body.firstname);
+        console.log(request.body.first_name);
         return response.status(400).json("Input is not valid");
     }
     let checkValExists = true;
@@ -26,15 +26,15 @@ const createUser = async (request, response) => {
     }
 
     const {
-        firstname,
-        lastname,
+        first_name,
+        last_name,
         username,
         password
     } = request.body;
 
-    if (!firstname || !lastname || !username || !password  
+    if (!first_name || !last_name || !username || !password  
         || password.length < 8 
-        || !firstname.length || !lastname.length) {
+        || !first_name.length || !last_name.length) {
         return response.status(400).json("Input data is invalid! Please check again!");
     }
 
@@ -50,8 +50,8 @@ const createUser = async (request, response) => {
     passwordBCryptHash(password)
         .then((hashed) => {
             const newUser = {
-                firstname: request.body.firstname,
-                lastname: request.body.lastname,
+                first_name: request.body.first_name,
+                last_name: request.body.last_name,
                 password: hashed,
                 username: request.body.username,
                 account_created: new Date().toISOString(),
@@ -60,7 +60,8 @@ const createUser = async (request, response) => {
             User.create(newUser)
                 .then(data => {
                     console.log(data)
-                    return response.status(201).json("Your new user has been added successfully!")
+                    delete data.dataValues.password
+                    return response.status(201).json(data)
                 })
                 .catch(error => {
                     console.log(error)

@@ -1,0 +1,10 @@
+{
+    "aws_region": "us-east-1",
+    "base_ami_dev": "ami-0dfcb1ef8550277af",
+    "ssh_username": "ec2-user",
+    "zip_file_path": "",
+    "device_name": "/dev/xvda",
+    "device_volume": "8",
+    "device_volume_type": "gp2"
+  }
+  

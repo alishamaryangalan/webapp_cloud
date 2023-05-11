@@ -1,0 +1,17 @@
+[Unit]
+Description=Webapp App
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ec2-user/webapp
+ExecStart=/usr/bin/node /home/ec2-user/webapp/index.js
+EnvironmentFile=/home/ec2-user/webapp/.env
+Restart=on-failure
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=webapp-app
+User=ec2-user
+
+[Install]
+WantedBy=multi-user.target

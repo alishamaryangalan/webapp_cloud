@@ -7,6 +7,10 @@ const getProductById = require("./getProduct")
 const deleteProduct = require("./deleteProduct")
 const putProduct = require("./putProduct")
 const patchProduct = require("./patchProduct")
+const postImage = require("./postImage")
+const getImage = require("./getImage")
+const getAllImages = require("./getAllImages")
+const deleteImage = require("./deleteImage")
 
 module.exports = {
     createUser,
@@ -17,5 +21,9 @@ module.exports = {
     getProductById,
     deleteProduct,
     putProduct,
-    patchProduct
+    patchProduct,
+    postImage,
+    getImage,
+    getAllImages,
+    deleteImage
 }

@@ -1,26 +1,43 @@
 const express = require('express')
 const cors = require('cors')
 const bodyParser = require('body-parser')
-const { createUser } = require("./controllers")
-// const { getUsers } = require("./controllers")
-const { getUserById } = require("./controllers")
-const { updateUser } = require("./controllers")
-const { createProduct } = require("./controllers")
-const { getProductById } = require("./controllers")
-const { deleteProduct } = require("./controllers")
-const { putProduct } = require("./controllers")
-const { patchProduct } = require("./controllers")
-require('dotenv').config();
+const multer = require('multer')
+const { 
+    createUser, 
+    getUserById,
+    updateUser, 
+    createProduct,
+    getProductById,
+    deleteProduct,
+    putProduct,
+    patchProduct,
+    postImage,
+    getImage,
+    getAllImages,
+    deleteImage
+} = require("./controllers")
+
+require('dotenv').config()
+
+const path = require('path');
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '/uploads');
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  }
+});
+
+const upload = multer({ storage: storage });
 
 const PORT = process.env.PORT
 
 const app = express()
 
-var corsOptions = {
-    origin: process.env.ORIGIN
-}
-
-app.use(cors(corsOptions))
+app.use(cors())
 app.use(bodyParser.json())
 
 app.use(bodyParser.urlencoded({
@@ -29,7 +46,7 @@ app.use(bodyParser.urlencoded({
 
 const db = require("./models")
 db.sequelize.sync(
-  //  {force:true}
+//    {force:true}
     )
 .then(() => {
     app.listen(PORT, () =>  console.log(`App running on port ${PORT}.`))
@@ -53,9 +70,6 @@ app.get('/healthz', (request, response) => {
 //Route used to create a new user
 app.post('/v1/user', createUser)
 
-//To get all users
-// app.get('/users', getUsers )
-
 //To get one user by ID
 app.get('/v1/user/:userID', getUserById )
 
@@ -77,8 +91,32 @@ app.put('/v1/product/:productId', putProduct)
 //To update a product using PATCH
 app.patch('/v1/product/:productId', patchProduct)
 
+//To upload an image
+app.post('/v1/product/:productId/image', upload.single(process.env.filename), postImage)
+
+//To get Image Details
+app.get('/v1/product/:productId/image/:imageId', getImage)
+
+//To get List of All Images Uploaded
+app.get('/v1/product/:productId/image', getAllImages)
+
+//To delete the image
+app.delete('/v1/product/:productId/image/:imageId', deleteImage)
+
 //Page not found
 app.use((request, response, next) => {
-    response.status(404).send('Sorry, cannot find this page!');
+    return response.status(404).send('Sorry, cannot find this page!');
   });
 
+app.use((err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json("Add 'file' in Key");
+      }
+      return res.status(400).json(err.message);
+    } 
+    else if (err) {
+      return res.status(500).json(err.message);
+    }
+    next();
+  })

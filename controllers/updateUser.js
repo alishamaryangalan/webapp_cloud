@@ -26,33 +26,33 @@ const updateUser = async (request, response) => {
                         if(requestKey.includes('account_updated') || requestKey.includes('account_created') || requestKey.includes('username')){
                             return response.status(400).json("Enter only the firstname, lastname and/or password.");
                         }
-                        if(requestKey.includes('firstname') && requestKey.includes('lastname') && requestKey.includes('password')){
+                        if(requestKey.includes('first_name') && requestKey.includes('last_name') && requestKey.includes('password')){
                             const hash = await passwordBCryptHash(request.body.password);    
                             User.update( {
-                                firstname: request.body.firstname, 
-                                lastname: request.body.lastname, 
+                                first_name: request.body.first_name, 
+                                last_name: request.body.last_name, 
                                 password: hash
                             },
                             { where: { id: userID } })
                             .then(result => { return response.status(204).send("Firstname, lastname & password is updated.")})
                             .catch(err => { return response.sendStatus(400)});
                         }
-                        else if(requestKey.includes('password') && requestKey.includes('lastname')){
+                        else if(requestKey.includes('password') && requestKey.includes('last_name')){
                             const hash = await passwordBCryptHash(request.body.password);
                             console.log(hash)
                             User.update( {
-                                lastname: request.body.lastname, 
+                                last_name: request.body.last_name, 
                                 password: hash
                             },
                             { where: { id: userID } })
                             .then(result => { return response.status(204).send("Password and lastname are successfully updated!")})
                             .catch(err => { return response.sendStatus(400)});
                         }
-                        else if(requestKey.includes('password') && requestKey.includes('firstname')){
+                        else if(requestKey.includes('password') && requestKey.includes('first_name')){
                             const hash = await passwordBCryptHash(request.body.password);
                             console.log(hash)
                             User.update( {
-                                firstname: request.body.firstname, 
+                                first_name: request.body.first_name, 
                                 password: hash
                             },
                             { where: { id: userID } })
@@ -69,17 +69,17 @@ const updateUser = async (request, response) => {
                                 .then(result => { return response.status(204).send("Password is successfully updated!")})
                                 .catch(err => { return response.sendStatus(400)});
                         } 
-                        else if(requestKey.includes('lastname')){
+                        else if(requestKey.includes('last_name')){
                             User.update( {
-                                lastname: request.body.lastname
+                                last_name: request.body.last_name
                             },
                             { where: { id: userID } })
                             .then(result => { return response.status(204).send("Last name is successfully updated!")})
                             .catch(err => { return response.sendStatus(400)});
                         }
-                        else if(requestKey.includes('firstname')){
+                        else if(requestKey.includes('first_name')){
                             User.update( {
-                                firstname: request.body.firstname
+                                first_name: request.body.first_name
                             },
                             { where: { id: userID } })
                             .then(result => { return response.status(204).send("Firstname is successfully updated!")})

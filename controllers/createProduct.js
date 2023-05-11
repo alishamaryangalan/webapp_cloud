@@ -1,4 +1,5 @@
 const { basicAuth } = require("../utils/basicAuth")
+const { comparePassword } = require("../utils/password")
 const db = require("../models")
 const Product = db.products
 const User = db.users
@@ -33,10 +34,11 @@ const createProduct = async (request, response) => {
         quantity
     } = request.body;
 
-    if (!name || !description || !sku || !manufacturer || !quantity) {
+    if (!name || !description || !sku || !manufacturer || name==null || description==null || manufacturer==null 
+        || sku==null) {
         return response.status(400).json("Input data is invalid! Please check again!");
     }
-    else if (typeof quantity != 'number' || quantity<0 || quantity==0 || quantity>=100){
+    else if (typeof quantity != 'number'  || quantity>100 || quantity<0 || quantity==null){
         return response.status(400).json("Enter valid quantity for the product");
     }
     const skuExists = await Product.findOne({ where: {sku: request.body.sku} });
@@ -47,28 +49,32 @@ const createProduct = async (request, response) => {
     }})
         .then(result => {
             if(result){
-                const newProduct = {
-                    name: request.body.name,
-                    description: request.body.description,
-                    sku: request.body.sku,
-                    manufacturer: request.body.manufacturer,
-                    quantity: request.body.quantity,
-                    date_added: new Date().toISOString(),
-                    date_last_updated: new Date().toISOString(),
-                    owner_user_id: result.dataValues.id
-                }
-                Product.create(newProduct)
-                .then(data => {
-                    return response.status(201).json("Your new product has been added successfully!")
-                })
-            .catch(error => {
-                console.log(error)
-                response.status(400).json("Error occured while creating the product")
-            }) 
-            }
-            else {
-                response.status(401).json("User not found!")
-            }
-        })
+                const hashPassword = result.get('password')
+                comparePassword(hashPassword, password)
+                    .then(async compareValue => {
+                        if(compareValue){
+                            const newProduct = {
+                                name: request.body.name,
+                                description: request.body.description,
+                                sku: request.body.sku,
+                                manufacturer: request.body.manufacturer,
+                                quantity: request.body.quantity,
+                                date_added: new Date().toISOString(),
+                                date_last_updated: new Date().toISOString(),
+                                owner_user_id: result.dataValues.id
+                            }
+                            Product.create(newProduct)
+                            .then(data => {
+                                return response.status(201).json(data)
+                            })
+                            .catch(error => {
+                                console.log(error)
+                                response.status(400).json("Error occured while creating the product")
+                            }) 
+                        }
+                        else response.status(401).json("Not authenticated")
+                    })
+            } else return response.status(401).json("Not authenticated")
+    })
 }
 module.exports = createProduct
